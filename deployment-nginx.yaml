@@ -48,7 +48,7 @@ spec:
 
         #  Main Nginx container
         - name: nginx
-          image: 753093280022.dkr.ecr.ap-northeast-1.amazonaws.com/myrepo:{IMAGE_TAG}
+          image: 753093280022.dkr.ecr.ap-northeast-1.amazonaws.com/myrepo:IMAGE_TAG
           ports:
             - containerPort: 80
           volumeMounts:
