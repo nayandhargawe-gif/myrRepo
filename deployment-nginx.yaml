@@ -13,22 +13,18 @@ spec:
         app: nginx
     spec:
       volumes:
-        # Raw config from ConfigMap
         - name: nginx-config-raw
           configMap:
             name: nginx-config
 
-        # Shared volume for processed config
         - name: nginx-config-shared
           emptyDir: {}
 
-        # Persistent app data
         - name: app-storage
           persistentVolumeClaim:
             claimName: app-data-pvc
 
       containers:
-        #  Sidecar: manages config
         - name: config-sidecar
           image: busybox
           command:
@@ -37,25 +33,21 @@ spec:
             - |
               echo "Copying nginx config..."
               cp /raw/nginx.conf /shared/nginx.conf
-              while true; do
-                sleep 30
-              done
+              while true; do sleep 30; done
           volumeMounts:
             - name: nginx-config-raw
               mountPath: /raw
             - name: nginx-config-shared
               mountPath: /shared
 
-        #  Main Nginx container
         - name: nginx
           image: 753093280022.dkr.ecr.ap-northeast-1.amazonaws.com/myrepo:IMAGE_TAG_PLACEHOLDER
           ports:
             - containerPort: 80
           volumeMounts:
-            # Final config used by Nginx
             - name: nginx-config-shared
               mountPath: /etc/nginx
 
-            # Persistent HTML content
+            #  PVC mounted to /data instead of html folder
             - name: app-storage
-              mountPath: /usr/share/nginx/html
+              mountPath: /data
