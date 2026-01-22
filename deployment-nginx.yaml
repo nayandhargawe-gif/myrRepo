@@ -12,6 +12,29 @@ spec:
       labels:
         app: nginx
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - Nayan-node
+
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: nginx
+              topologyKey: kubernetes.io/hostname
+
+      tolerations:
+        - key: "dedicated"
+          operator: "Equal"
+          value: "nginx"
+          effect: "NoSchedule"
+
       volumes:
         - name: nginx-config-raw
           configMap:
@@ -47,7 +70,5 @@ spec:
           volumeMounts:
             - name: nginx-config-shared
               mountPath: /etc/nginx
-
-            #  PVC mounted to /data instead of html folder
             - name: app-storage
               mountPath: /data
