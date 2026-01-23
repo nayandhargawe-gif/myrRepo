@@ -14,20 +14,23 @@ spec:
     spec:
       affinity:
         nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
                   - key: kubernetes.io/hostname
-                    operator: In
+                    operator: NotIn
                     values:
                       - Nayan-node
 
-        podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchLabels:
-                  app: nginx
-              topologyKey: kubernetes.io/hostname
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: nginx
+                topologyKey: kubernetes.io/hostname
 
       tolerations:
         - key: "dedicated"
@@ -47,9 +50,10 @@ spec:
           persistentVolumeClaim:
             claimName: app-data-pvc
 
-      containers:
+      initContainers:
         - name: config-sidecar
           image: busybox
+          restartPolicy: Always
           command:
             - sh
             - -c
@@ -63,12 +67,47 @@ spec:
             - name: nginx-config-shared
               mountPath: /shared
 
+      containers:
         - name: nginx
           image: 753093280022.dkr.ecr.ap-northeast-1.amazonaws.com/myrepo:IMAGE_TAG_PLACEHOLDER
           ports:
             - containerPort: 80
+
+          #  PROBES (ADDED)
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 80
+            failureThreshold: 30
+            periodSeconds: 5
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+
+          # RESOURCE REQUESTS & LIMITS (ADDED)
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
           volumeMounts:
             - name: nginx-config-shared
               mountPath: /etc/nginx
             - name: app-storage
-              mountPath: /data
+              mountPath: /var/www/html
